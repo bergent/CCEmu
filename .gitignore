@@ -1,0 +1,12 @@
+# Generated files
+
+bin/
+build/
+
+# Log files
+
+*.todo
+*.log
+
+# VS Code directory
+.vscode/

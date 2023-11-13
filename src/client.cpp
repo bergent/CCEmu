@@ -29,12 +29,18 @@ void Client::Run() {
         std::cout << "Enter request: ";
         std::cin >> _request;
 
-        res = client.Get("/"+_request);
-
-        if (res->status != 200) {
-            std::cerr << "WARNING: The request is incorrect!\n";
+        if (res = client.Get("/"+_request)) {
+            if (res->status != 200) {
+                std::cerr << "WARNING: The request is invalid!\n\n";
+                continue;
+            }
+        }
+        else {
+            std::cerr << "ERROR: " << res.error() << '\n';
             continue;
         }
+
+        
 
         std::cout << "Response: " << res->body << '\n';
     }

@@ -1,8 +1,7 @@
-#include "httplib.h"
 #include "client.h"
 #include "server.h"
 #include <iostream>
-#include <string>
+#include <string_view>
 
 int main(int argc, char** argv) {
     
@@ -12,7 +11,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::string run_mode {argv[1]};
+    std::string_view run_mode {argv[1]};
 
     if (run_mode == "server") {
         Server server {};

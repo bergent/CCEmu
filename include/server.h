@@ -5,12 +5,15 @@
 #include <fstream>
 
 class Server {
-public:
+public:    
     Server();
 
     void Run();
 
 private:
+    inline static const std::string config_path {"../config.json"};
+    inline static const std::string log_path {"../server.log"};   
+
     int _port{};
     std::string _host{};
 

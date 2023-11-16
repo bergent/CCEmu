@@ -6,7 +6,7 @@ build/
 # Log files
 
 *.todo
-*.log
+logs/*.log
 
 # VS Code directory
 .vscode/

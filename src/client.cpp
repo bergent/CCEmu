@@ -3,14 +3,28 @@
 using json = nlohmann::json;
 
 Client::Client() {
+    LoggerInit();
     ClientSettingsInit();
+}
+
+void Client::LoggerInit() {
+    try {
+        _logger = spdlog::basic_logger_mt("client_log", Client::log_path,
+                                          true);
+    }
+    catch (const spdlog::spdlog_ex& ex) {
+        std::cerr << "Client log init failed: " << ex.what() << '\n';
+    }
+    spdlog::flush_on(spdlog::level::trace);
+    spdlog::set_default_logger(_logger);
+    _logger->info("Logger initialized successfully");
 }
 
 void Client::ClientSettingsInit() {
     std::ifstream jsonfile(Client::config_path);
 
     if (jsonfile.fail()) {
-        std::cerr << "ERROR: Unable to read config file\n";
+        _logger->error("Unable to read configuration file");
         _port = -1;
         _host = "";
         return;
@@ -25,7 +39,8 @@ void Client::ClientSettingsInit() {
 void Client::Run() {
     // Check if JSON file was read correctly
     if (_port == -1 || _host == "") {
-        std::cerr << "ERROR: Client initialization failed. Shutting down\n";
+        std::cerr << "[ERROR] Client initialization failed. Shutting down.\n";
+        _logger->error("Client initialization failed. Shutting down.");
         return;
     }
 
@@ -33,11 +48,11 @@ void Client::Run() {
 
     // Check if client is OK
     if (!client.is_valid()) {
-        std::cerr << "ERROR: Client is not valid! Check the configuration file\n";
+        _logger->error("Client is not valid! Shutting down.");
         return;
     }
 
-    std::cout << "The client is running properly\n";
+    _logger->info("The client is running properly");
 
     // Main loop to send requests to server
     httplib::Result res {};
@@ -45,17 +60,20 @@ void Client::Run() {
         std::cout << "Enter request: ";
         std::cin >> _request;
 
+        _logger->info("Sent request to server: " + _request);
         if (res = client.Get("/"+_request)) {
             if (res->status != 200) {
-                std::cerr << "WARNING: The request is invalid!\n\n"; 
+                std::cerr << "[WARNING] The request is invalid!\n\n"; 
+                _logger->warn("Incorrect request: " + _request);
                 continue;
             }
         }
         else {
-            std::cerr << "ERROR: " << res.error() << '\n'; // Will notify if server is down
+            std::cerr << "[ERROR] Can't establish connection to server.\n\n";
+            _logger->error("Can't establish connection to server.");
             continue;
         }
-
-        std::cout << "Response: " << res->body << '\n';
+        std::cout << "Response: " << res->body << "\n\n";
+        _logger->info("Server response: " + res->body);
     }
 }

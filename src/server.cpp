@@ -3,16 +3,29 @@
 
 using json = nlohmann::json;
 
-
 Server::Server() {
+    LoggerInit();
     ServerSettingsInit();
+}
+
+void Server::LoggerInit() {
+    try {
+        _logger = spdlog::basic_logger_mt("server_log", Server::log_path,
+                                          true);
+    }
+    catch (const spdlog::spdlog_ex& ex) {
+        std::cerr << "Server log init failed: " << ex.what() << '\n';
+    }
+    spdlog::flush_on(spdlog::level::trace);
+    spdlog::set_default_logger(_logger);
+    _logger->info("Logger initialized successfully");
 }
 
 void Server::ServerSettingsInit() {
     std::fstream jsonfile {Server::config_path};
 
     if (jsonfile.fail()) {
-        std::cerr << "ERROR: Unable to read config file.\n";
+        _logger->error("Unable to read config file.");
         _port = -1;
         _host = "";
         return;
@@ -27,7 +40,8 @@ void Server::ServerSettingsInit() {
 void Server::Run() {
     // Check if JSON was read correctly
     if (_port == -1 || _host == "") {
-        std::cerr << "ERROR: Server initialization failed. Shutting down.\n";
+        std::cerr << "[ERROR] Server initialization failed. Shutting down.\n";
+        _logger->error("Server initialization failed. Shutting down.");
         return;
     }
 
@@ -36,19 +50,23 @@ void Server::Run() {
     // GET Request handler for phone numbers
     // Will return phone number matching the regexp
     server.Get(R"((/)(\+?[7-8](\d{10})))", [&](const httplib::Request& req, httplib::Response& res) {
+        _logger->info("Received request: " + std::string(req.matches[0]));
         auto numbers = req.matches[2];
 
+        _logger->info("Matched phone number: " + std::string(numbers));
         Call incoming_call {numbers};
 
         res.set_content(incoming_call.getID(), "text/plain");
+
+        _logger->info("Sent response to the client: " + incoming_call.getID());
     }); 
 
     // Check if server is valid
     if (!server.is_valid()) {
-       std::cerr << "ERROR: Server is not valid! Check the configuration file\n";
+        _logger->error("Server is not valid! Shutting down.");
        return;
     }
-    std::cout << "Server is running properly\n";
+    _logger->info("The server is running properly.");
 
     // Make server listen to the designated host and port
     server.listen(_host, _port);

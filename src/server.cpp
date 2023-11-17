@@ -5,7 +5,8 @@ using json = nlohmann::json;
 
 Server::Server() {
     LoggerInit();
-    ServerSettingsInit();
+    SettingsInit();
+    _callcenter = std::make_unique<CallCenter>();
 }
 
 void Server::LoggerInit() {
@@ -21,7 +22,7 @@ void Server::LoggerInit() {
     _logger->info("Logger initialized successfully");
 }
 
-void Server::ServerSettingsInit() {
+void Server::SettingsInit() {
     std::fstream jsonfile {Server::config_path};
 
     if (jsonfile.fail()) {

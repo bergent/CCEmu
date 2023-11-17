@@ -1,11 +1,17 @@
+#ifndef SERVER_H    
+#define SERVER_H
+
 #include "httplib.h"
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
+#include "callcenter.h"
+
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 class Server {
 public:    
@@ -21,6 +27,10 @@ private:
     int _port{};
     std::string _host{};
 
-    void ServerSettingsInit();
+    std::unique_ptr<CallCenter> _callcenter {nullptr};
+
+    void SettingsInit();
     void LoggerInit();
 };
+
+#endif

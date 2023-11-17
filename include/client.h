@@ -1,8 +1,10 @@
+#ifndef CLIENT_H
+#define CLIENT_H
+
 #include "httplib.h"
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
-
 
 #include <string>
 #include <iostream>
@@ -25,6 +27,8 @@ private:
 
     
 
-    void ClientSettingsInit();
+    void SettingsInit();
     void LoggerInit();
 };
+
+#endif

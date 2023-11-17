@@ -4,7 +4,7 @@ using json = nlohmann::json;
 
 Client::Client() {
     LoggerInit();
-    ClientSettingsInit();
+    SettingsInit();
 }
 
 void Client::LoggerInit() {
@@ -20,7 +20,7 @@ void Client::LoggerInit() {
     _logger->info("Logger initialized successfully");
 }
 
-void Client::ClientSettingsInit() {
+void Client::SettingsInit() {
     std::ifstream jsonfile(Client::config_path);
 
     if (jsonfile.fail()) {

@@ -1,5 +1,5 @@
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef CCEMU_CLIENT_H
+#define CCEMU_CLIENT_H
 
 #include "httplib.h"
 #include "nlohmann/json.hpp"

@@ -1,5 +1,5 @@
-#ifndef SERVER_H    
-#define SERVER_H
+#ifndef CCEMU_SERVER_H    
+#define CCEMU_SERVER_H
 
 #include "httplib.h"
 #include "nlohmann/json.hpp"

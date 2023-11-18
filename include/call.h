@@ -1,5 +1,5 @@
-#ifndef CALL_H
-#define CALL_H
+#ifndef CCEMU_CALL_H
+#define CCEMU_CALL_H
 
 #include "uuid_v4.h"
 #include "boost/date_time/posix_time/posix_time.hpp"

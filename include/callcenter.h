@@ -1,5 +1,5 @@
-#ifndef CALLCENTER_H
-#define CALLCENTER_H
+#ifndef CCEMU_CALLCENTER_H
+#define CCEMU_CALLCENTER_H
 
 #include "call.h"
 #include "nlohmann/json.hpp"

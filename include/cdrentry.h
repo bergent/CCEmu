@@ -1,5 +1,5 @@
-#ifndef CDRENTRY_H
-#define CDRENTRY_H
+#ifndef CCEMU_CDRENTRY_H
+#define CCEMU_CDRENTRY_H
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <string>

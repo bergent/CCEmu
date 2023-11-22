@@ -8,6 +8,10 @@ Call::Call(const std::string& number)
     UUIDv4::UUIDGenerator<std::mt19937_64> uuid_generator;
     UUIDv4::UUID uuid { uuid_generator.getUUID() };
     _id = uuid.str();
+
+    _call_cdr.incoming_time = _time_incoming;
+    _call_cdr.call_id = _id;
+    _call_cdr.phone_number = _phone_number;
 }
 
 const std::string& Call::getID() const {
@@ -20,4 +24,12 @@ const std::string& Call::getNumber() const {
 
 const boost::posix_time::ptime& Call::getTimeIncoming() const {
     return _time_incoming;
+}
+
+CDREntry& Call::getCDR() {
+    return _call_cdr;
+}
+
+const CDREntry& Call::getCDR() const {
+    return _call_cdr;
 }

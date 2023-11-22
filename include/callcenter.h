@@ -1,23 +1,46 @@
 #ifndef CCEMU_CALLCENTER_H
 #define CCEMU_CALLCENTER_H
 
+#include "randomizer.h"
 #include "call.h"
+#include "operator.h"
+#include "cdrentry.h"
+
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
+#include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <iostream>
 #include <fstream>
+#include <memory>
+#include <functional>
+#include <vector>
 #include <deque>
 
+class Operator;
+
+// TODO: Different policies for duplication of incoming calls
 enum class Policy {
     Warning,
-    Replace
+    Replace,
+};
+
+// Status codes for incoming call
+enum class IncomingStatus {
+    OK,
+    Overload,
+    Duplication,
+    Queued,
 };
 
 class CallCenter {
 public:
     CallCenter();
+
+    // Main function to handle incoming call
+    IncomingStatus ReceiveCall(Call& call);
+    void WriteCDR(const CDREntry& cdr);
     
 private:
     // Config and log
@@ -25,24 +48,42 @@ private:
     inline static const std::string log_path {"../logs/callcenter.log"};
     std::shared_ptr<spdlog::logger> _logger;
 
+    // CDR file location
+    inline static const std::string cdr_path {"../cdr.txt"};
+
     // Config variables 
     unsigned int _num_operators{};
-    std::size_t _queue_size{};
+    std::size_t _queue_max_size{};
 
-    // Timings in seconds
-    unsigned int _min_queue_time;
-    unsigned int _max_queue_time;
+    // Timings in milliseconds
+    int _min_queue_time;
+    int _max_queue_time;
 
-    unsigned int _min_call_time;
-    unsigned int _max_call_time;
+    int _min_call_time;
+    int _max_call_time;
 
+    // Duplication policy 
     Policy _policy;
 
     // Containers
+    std::deque<std::reference_wrapper<Call>> _call_queue;
+    std::vector<Operator> _operators;
+    std::deque<std::reference_wrapper<Operator>> _free_operators;
+
+    // Randomizer
+    std::unique_ptr<Randomizer> randomizer;
+
+    // Private functions
+    void Connect(Operator& oper, Call& call);
+    bool IsOperatorsAvailable() const;
+    bool IsQueueFull() const;
+    bool IsQueueEmpty() const;
+    bool IsDuplication(const Call& call) const;
 
     // Initialization functions
     void SettingsInit();
     void LoggerInit();
+    void InitOperators();
 };
 
 #endif

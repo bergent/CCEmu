@@ -8,7 +8,7 @@ struct CDREntry {
     boost::posix_time::ptime incoming_time;
     boost::posix_time::ptime release_time;
     boost::posix_time::ptime operator_response_time;
-    boost::posix_time::ptime call_duration;
+    int call_duration;
     std::string call_id{};
     std::string phone_number{};
     std::string status{};

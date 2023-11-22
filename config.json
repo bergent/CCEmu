@@ -14,7 +14,7 @@
    "callcenter":
    {
         "num_operators": 4,
-        "queue_size": 4,
+        "queue_max_size": 4,
         "min_queue_time": 60,
         "max_queue_time": 120,
         "min_call_time" : 60,

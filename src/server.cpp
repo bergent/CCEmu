@@ -1,5 +1,5 @@
 #include "server.h"
-#include "call.h"
+
 
 using json = nlohmann::json;
 
@@ -57,8 +57,25 @@ void Server::Run() {
         _logger->info("Matched phone number: " + std::string(numbers));
         Call incoming_call {numbers};
 
-        res.set_content(incoming_call.getID(), "text/plain");
+        auto status = _callcenter->ReceiveCall(incoming_call);
 
+        if (status == IncomingStatus::OK) {
+            res.set_content(incoming_call.getID() + " | OK", "text/plain");
+            incoming_call.getCDR().status = "OK";
+        } 
+        else if (status == IncomingStatus::Overload) {
+            res.set_content(incoming_call.getID() + " | Overload", "text/plain");
+            incoming_call.getCDR().status = "Overload";
+        } 
+        else if (status == IncomingStatus::Duplication) {
+            res.set_content(incoming_call.getID() + " | Duplication", "text/plain");
+            incoming_call.getCDR().status = "Duplication";
+        } else if (status == IncomingStatus::Queued) {
+            res.set_content(incoming_call.getID() + " | Queued", "text/plain");
+            incoming_call.getCDR().status = "Queued";
+        }
+
+        _callcenter->WriteCDR(incoming_call.getCDR());
         _logger->info("Sent response to the client: " + incoming_call.getID());
     }); 
 

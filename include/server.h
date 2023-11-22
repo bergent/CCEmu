@@ -1,17 +1,19 @@
 #ifndef CCEMU_SERVER_H    
 #define CCEMU_SERVER_H
 
+#include "callcenter.h"
+
 #include "httplib.h"
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
-#include "callcenter.h"
-
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <memory>
+
+class CallCenter;
 
 class Server {
 public:    

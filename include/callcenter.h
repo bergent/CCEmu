@@ -32,6 +32,7 @@ enum class IncomingStatus {
     Overload,
     Duplication,
     Queued,
+    Undefined,
 };
 
 class CallCenter {
@@ -39,7 +40,7 @@ public:
     CallCenter();
 
     // Main function to handle incoming call
-    IncomingStatus ReceiveCall(Call& call);
+    IncomingStatus ReceiveCall(std::shared_ptr<Call> call);
     void WriteCDR(const CDREntry& cdr);
     
 private:
@@ -52,7 +53,7 @@ private:
     inline static const std::string cdr_path {"../cdr.txt"};
 
     // Config variables 
-    unsigned int _num_operators{};
+    std::size_t _num_operators{};
     std::size_t _queue_max_size{};
 
     // Timings in milliseconds
@@ -66,24 +67,26 @@ private:
     Policy _policy;
 
     // Containers
-    std::deque<std::reference_wrapper<Call>> _call_queue;
+    std::vector<std::string> _current_call_sessions;
+    std::deque<Call*> _call_queue;
     std::vector<Operator> _operators;
-    std::deque<std::reference_wrapper<Operator>> _free_operators;
+    std::deque<Operator*> _free_operators;
 
     // Randomizer
     std::unique_ptr<Randomizer> randomizer;
 
     // Private functions
-    void Connect(Operator& oper, Call& call);
+    void Connect(Operator* oper, Call* call);
     bool IsOperatorsAvailable() const;
     bool IsQueueFull() const;
     bool IsQueueEmpty() const;
-    bool IsDuplication(const Call& call) const;
+    bool IsDuplication(const Call* const call) const;
 
     // Initialization functions
     void SettingsInit();
     void LoggerInit();
     void InitOperators();
+    void InitRandomizer();
 };
 
 #endif

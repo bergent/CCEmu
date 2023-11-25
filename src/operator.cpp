@@ -8,11 +8,20 @@ int Operator::getID() const {
     return _id;
 }
 
-std::string Operator::getIDStr() const {
-    return std::to_string(_id);
+void Operator::setCurrentCall(Call* call) {
+    _currentCall = call;
+}
+
+Call* Operator::getCurrentCall() {
+    return _currentCall;
+}
+
+const Call* Operator::getCurrentCall() const {
+    return _currentCall;
 }
 
 void Operator::RunCall(int call_duration) {
     
     std::this_thread::sleep_for(std::chrono::milliseconds(call_duration));
 }
+

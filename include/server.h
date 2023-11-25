@@ -3,6 +3,7 @@
 
 #include "callcenter.h"
 
+#include "uuid_v4.h"
 #include "httplib.h"
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
@@ -30,6 +31,8 @@ private:
     std::string _host{};
 
     std::unique_ptr<CallCenter> _callcenter {nullptr};
+
+    UUIDv4::UUIDGenerator<std::mt19937_64> _uuid_generator;
 
     void SettingsInit();
     void LoggerInit();

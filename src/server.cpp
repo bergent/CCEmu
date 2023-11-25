@@ -51,32 +51,41 @@ void Server::Run() {
     // GET Request handler for phone numbers
     // Will return phone number matching the regexp
     server.Get(R"((/)(\+?[7-8](\d{10})))", [&](const httplib::Request& req, httplib::Response& res) {
-        _logger->info("Received request: " + std::string(req.matches[0]));
+        _logger->info("Received request: {}", std::string(req.matches[0]));
         auto numbers = req.matches[2];
 
-        _logger->info("Matched phone number: " + std::string(numbers));
-        Call incoming_call {numbers};
+        UUIDv4::UUID uuid { _uuid_generator.getUUID() };
+
+        _logger->info("Matched phone number: {}", std::string(numbers));
+        std::shared_ptr<Call> incoming_call {std::make_shared<Call>(std::string(numbers), uuid.str())};
 
         auto status = _callcenter->ReceiveCall(incoming_call);
 
         if (status == IncomingStatus::OK) {
-            res.set_content(incoming_call.getID() + " | OK", "text/plain");
-            incoming_call.getCDR().status = "OK";
+            res.set_content(incoming_call->getID() + " | OK", "text/plain");
+            incoming_call->getCDR().status = "OK";
         } 
         else if (status == IncomingStatus::Overload) {
-            res.set_content(incoming_call.getID() + " | Overload", "text/plain");
-            incoming_call.getCDR().status = "Overload";
+            res.set_content(incoming_call->getID() + " | Overload", "text/plain");
+            incoming_call->getCDR().status = "Overload";
+            _callcenter->WriteCDR(incoming_call->getCDR());
         } 
         else if (status == IncomingStatus::Duplication) {
-            res.set_content(incoming_call.getID() + " | Duplication", "text/plain");
-            incoming_call.getCDR().status = "Duplication";
-        } else if (status == IncomingStatus::Queued) {
-            res.set_content(incoming_call.getID() + " | Queued", "text/plain");
-            incoming_call.getCDR().status = "Queued";
+            res.set_content(incoming_call->getID() + " | Duplication", "text/plain");
+            incoming_call->getCDR().status = "Duplication";
+            _callcenter->WriteCDR(incoming_call->getCDR());
+        } 
+        else if (status == IncomingStatus::Queued) {
+            res.set_content(incoming_call->getID() + " | Queued", "text/plain");
+            incoming_call->getCDR().status = "OK";
+        }
+        else {
+            res.set_content(incoming_call->getID() + " | Undefined Error", "text/plain");
+            incoming_call->getCDR().status = "Error";
+            _callcenter->WriteCDR(incoming_call->getCDR());
         }
 
-        _callcenter->WriteCDR(incoming_call.getCDR());
-        _logger->info("Sent response to the client: " + incoming_call.getID());
+        _logger->info("Sent response to the client: " + incoming_call->getID());
     }); 
 
     // Check if server is valid

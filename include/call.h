@@ -1,7 +1,6 @@
 #ifndef CCEMU_CALL_H
 #define CCEMU_CALL_H
 
-#include "uuid_v4.h"
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include "cdrentry.h"
@@ -10,7 +9,7 @@
 
 class Call {
 public:
-    Call(const std::string& number);
+    Call(const std::string& number, const std::string& id);
 
     const std::string& getID() const;
     const std::string& getNumber() const;

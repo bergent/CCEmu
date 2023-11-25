@@ -7,26 +7,27 @@
 #include <thread>
 
 class CallCenter;
+class Call;
 
 class Operator {
 public:
     Operator(CallCenter* parentCC);
 
     int getID() const;
-    std::string getIDStr() const;
 
-    void setCDR(CDREntry* cdr);
+    void setCurrentCall(Call* call);
+    Call* getCurrentCall();
+    const Call* getCurrentCall() const;
 
     void RunCall(int call_duration);
 
 private:
     CallCenter* _parentCC {nullptr};
-    CDREntry* _cdrPtr {nullptr};
+    Call* _currentCall {nullptr};
 
-    inline static int _id_counter {0};
+    inline static int _id_counter {1};
     const int _id;
 };
-
 
 
 #endif

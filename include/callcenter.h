@@ -15,6 +15,7 @@
 #include <fstream>
 #include <memory>
 #include <functional>
+#include <unordered_map>
 #include <vector>
 #include <deque>
 
@@ -33,6 +34,11 @@ enum class IncomingStatus {
     Duplication,
     Queued,
     Undefined,
+};
+
+enum class SessionStatus {
+    Active,
+    Inactive
 };
 
 class CallCenter {
@@ -67,10 +73,10 @@ private:
     Policy _policy;
 
     // Containers
-    std::vector<std::string> _current_call_sessions;
     std::deque<Call*> _call_queue;
     std::vector<Operator> _operators;
     std::deque<Operator*> _free_operators;
+    std::unordered_map<std::string, SessionStatus> _sessions;
 
     // Randomizer
     std::unique_ptr<Randomizer> randomizer;

@@ -25,7 +25,7 @@ private:
     CallCenter* _parentCC {nullptr};
     Call* _currentCall {nullptr};
 
-    inline static int _id_counter {1};
+    inline static int _id_counter {0};
     const int _id;
 };
 

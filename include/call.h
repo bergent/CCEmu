@@ -13,7 +13,6 @@ public:
 
     const std::string& getID() const;
     const std::string& getNumber() const;
-    const boost::posix_time::ptime& getTimeIncoming() const;
 
     CDREntry& getCDR();
     const CDREntry& getCDR() const;
@@ -23,7 +22,6 @@ public:
     }
 
 private:
-    boost::posix_time::ptime _time_incoming;
 
     CDREntry _call_cdr;
     std::string _phone_number{};

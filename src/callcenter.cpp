@@ -91,23 +91,20 @@ bool CallCenter::IsDuplication(const Call* const call) const {
     auto queue_result = std::find_if(_call_queue.begin(), _call_queue.end(), [call](Call* queued_call){
         return call->getNumber() == queued_call->getNumber();
     });
-    
+
     if (queue_result != _call_queue.end()) {
-        _logger->info("Found duplication in queue for number {}", call->getNumber());
+        _logger->info("Found call {} duplictaion in call queue", call->getNumber());
         return true;
     }
 
-    auto sessions_result = std::find_if(_current_call_sessions.begin(), _current_call_sessions.end(),
-    [call](std::string active_number){
-        return active_number == call->getNumber();
-    });
-
-    if (sessions_result != _current_call_sessions.end()) {
-        _logger->info("Found duplication in active session for number {}", call->getNumber());
-        return true;
+    if (auto active_session = _sessions.find(call->getNumber()); active_session != _sessions.end()){
+        if (active_session->second == SessionStatus::Active) {
+            _logger->info("Call {} is currently in active call session", call->getNumber());
+            return true;
+        }
     }
 
-    _logger->info("No duplication");
+    _logger->info("No duplication of call {}", call->getNumber());
     return false;
 }
 
@@ -135,11 +132,12 @@ IncomingStatus CallCenter::ReceiveCall(std::shared_ptr<Call> call) {
 }
 
 void CallCenter::Connect(Operator* oper, Call* call) {
-    _current_call_sessions.push_back(call->getNumber());
-    int call_time = randomizer->getCallTime();
+    int call_duration = randomizer->getCallTime();
+    _sessions.insert({call->getNumber(), SessionStatus::Active});
+    oper->setCurrentCall(call);
     call->getCDR().operator_response_time = boost::posix_time::microsec_clock::local_time();
     call->getCDR().operator_id = oper->getID();
-    call->getCDR().call_duration = call_time;
+    call->getCDR().call_duration = call_duration;
 }
 
 void CallCenter::WriteCDR(const CDREntry& cdr) {

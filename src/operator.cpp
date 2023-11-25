@@ -1,7 +1,7 @@
 #include "operator.h"
 
 Operator::Operator(CallCenter* parentCC) 
-    :_id{Operator::_id_counter++}, _parentCC{parentCC}
+    :_id{_id_counter++}, _parentCC{parentCC}
 {}
 
 int Operator::getID() const {

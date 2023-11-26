@@ -56,9 +56,9 @@ void CallCenter::SettingsInit() {
 
 void CallCenter::InitOperators() {
     for (std::size_t idx {0}; idx < _num_operators; ++idx) {
-        _operators.push_back(Operator(this));
-        _free_operators.push_front(&_operators.back());
-        _logger->info("Added operator {}", _operators.back().getID());
+        _operators.push_back(std::make_shared<Operator>(this));
+        _free_operators.push_front(std::shared_ptr<Operator>(_operators.back()));
+        _logger->info("Added operator {}", _operators.back()->getID());
     }
     _logger->info("Operators ready");
 }
@@ -97,11 +97,9 @@ bool CallCenter::IsDuplication(const Call* const call) const {
         return true;
     }
 
-    if (auto active_session = _sessions.find(call->getNumber()); active_session != _sessions.end()){
-        if (active_session->second == SessionStatus::Active) {
-            _logger->info("Call {} is currently in active call session", call->getNumber());
-            return true;
-        }
+    if (auto session_result = _sessions.find(call->getNumber()); session_result != _sessions.end()) {
+        _logger->info ("Found call {} duplication in active sessions", call->getNumber());
+        return true;
     }
 
     _logger->info("No duplication of call {}", call->getNumber());
@@ -131,15 +129,34 @@ IncomingStatus CallCenter::ReceiveCall(std::shared_ptr<Call> call) {
     return IncomingStatus::Undefined;
 }
 
-void CallCenter::Connect(Operator* oper, Call* call) {
+void CallCenter::Connect(std::shared_ptr<Operator> oper, Call* call) {
     int call_duration = randomizer->getCallTime();
-    _sessions.insert({call->getNumber(), SessionStatus::Active});
+    _sessions.insert(call->getNumber());
     oper->setCurrentCall(call);
     call->getCDR().operator_response_time = boost::posix_time::microsec_clock::local_time();
     call->getCDR().operator_id = oper->getID();
     call->getCDR().call_duration = call_duration;
+
+    oper->RunCall(call_duration);
+}
+
+void CallCenter::EndActiveSession(const std::string& number) {
+    if (auto iter = _sessions.find(number); iter != _sessions.end())
+        _sessions.erase(iter);
+}
+
+void CallCenter::SetOperatorReady(Operator* oper) {
+    auto iter = std::find_if(_operators.begin(), _operators.end(),
+    [oper](std::shared_ptr<Operator> base_oper){
+        return oper->getID() == base_oper->getID();
+    });
+
+    _free_operators.push_front(*iter);
 }
 
 void CallCenter::WriteCDR(const CDREntry& cdr) {
     std::cout << "Hello!\n";
 }
+
+
+

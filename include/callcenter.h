@@ -15,12 +15,11 @@
 #include <fstream>
 #include <memory>
 #include <functional>
-#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <deque>
 
 class Operator;
-
 // TODO: Different policies for duplication of incoming calls
 enum class Policy {
     Warning,
@@ -36,10 +35,6 @@ enum class IncomingStatus {
     Undefined,
 };
 
-enum class SessionStatus {
-    Active,
-    Inactive
-};
 
 class CallCenter {
 public:
@@ -47,7 +42,12 @@ public:
 
     // Main function to handle incoming call
     IncomingStatus ReceiveCall(std::shared_ptr<Call> call);
+
+    // Call processing functions
+    void SetOperatorReady(Operator* oper);
+    void EndActiveSession(const std::string& number);
     void WriteCDR(const CDREntry& cdr);
+
     
 private:
     // Config and log
@@ -74,15 +74,15 @@ private:
 
     // Containers
     std::deque<Call*> _call_queue;
-    std::vector<Operator> _operators;
-    std::deque<Operator*> _free_operators;
-    std::unordered_map<std::string, SessionStatus> _sessions;
+    std::vector<std::shared_ptr<Operator>> _operators;
+    std::deque<std::shared_ptr<Operator>> _free_operators;
+    std::unordered_set<std::string> _sessions;
 
     // Randomizer
     std::unique_ptr<Randomizer> randomizer;
 
     // Private functions
-    void Connect(Operator* oper, Call* call);
+    void Connect(std::shared_ptr<Operator> oper, Call* call);
     bool IsOperatorsAvailable() const;
     bool IsQueueFull() const;
     bool IsQueueEmpty() const;

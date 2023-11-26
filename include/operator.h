@@ -1,13 +1,13 @@
 #ifndef CCEMU_OPERATOR_H
 #define CCEMU_OPERATOR_H
 
-#include "cdrentry.h"
+#include "callcenter.h"
 
 #include <chrono>
+#include <mutex>
 #include <thread>
 
 class CallCenter;
-class Call;
 
 class Operator {
 public:
@@ -25,7 +25,9 @@ private:
     CallCenter* _parentCC {nullptr};
     Call* _currentCall {nullptr};
 
-    inline static int _id_counter {0};
+    void StartConversation(int call_duration);
+
+    inline static int _id_counter {1};
     const int _id;
 };
 

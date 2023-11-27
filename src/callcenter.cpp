@@ -2,11 +2,14 @@
 
 using json = nlohmann::json;
 
+std::mutex watchdog_lock;
+
 CallCenter::CallCenter() {
     LoggerInit();
     SettingsInit();
     InitOperators();
     InitRandomizer();
+    InitQueueWatchdog();
 }
 
 void CallCenter::LoggerInit() {
@@ -49,6 +52,7 @@ void CallCenter::SettingsInit() {
 
    _min_queue_time = cfg[0]["callcenter"]["min_queue_time"];
    _max_queue_time = cfg[0]["callcenter"]["max_queue_time"];
+   _queue_refresh_time = cfg[0]["callcenter"]["queue_refresh_time"];
    
    _min_call_time = cfg[0]["callcenter"]["min_call_time"];
    _max_call_time = cfg[0]["callcenter"]["max_call_time"];
@@ -65,44 +69,44 @@ void CallCenter::InitOperators() {
 
 
 void CallCenter::InitRandomizer() {
-    randomizer = std::make_unique<Randomizer>(_min_queue_time, _max_queue_time,
+    _randomizer = std::make_unique<Randomizer>(_min_queue_time, _max_queue_time,
                                              _min_call_time, _max_call_time);
     _logger->info("Randomizer ready");
 }
 
 bool CallCenter::IsOperatorsAvailable() const {
-    _logger->info("Free operators: {}", _free_operators.size());
+    _logger->debug("Free operators: {}", _free_operators.size());
     return (_free_operators.size() > 0);
 }
 
 bool CallCenter::IsQueueEmpty() const {
-    _logger->info("Checking if call queue is empty: {}", _call_queue.empty());
+    _logger->debug("Checking if call queue is empty: {}", _call_queue.empty());
     return _call_queue.empty();
 }
 
 bool CallCenter::IsQueueFull() const {
-    _logger->info("Checking if call queue is full: {}", _call_queue.size() >= _queue_max_size);
+    _logger->debug("Checking if call queue is full: {}", _call_queue.size() >= _queue_max_size);
     return (_call_queue.size() >= _queue_max_size);
 }
 
 bool CallCenter::IsDuplication(const Call* const call) const {
-    _logger->info("Checking if call is a duplication");
+    _logger->debug("Checking if call is a duplication");
 
     auto queue_result = std::find_if(_call_queue.begin(), _call_queue.end(), [call](Call* queued_call){
         return call->getNumber() == queued_call->getNumber();
     });
 
     if (queue_result != _call_queue.end()) {
-        _logger->info("Found call {} duplictaion in call queue", call->getNumber());
+        _logger->debug("Found call {} duplictaion in call queue", call->getNumber());
         return true;
     }
 
     if (auto session_result = _sessions.find(call->getNumber()); session_result != _sessions.end()) {
-        _logger->info ("Found call {} duplication in active sessions", call->getNumber());
+        _logger->debug("Found call {} duplication in active sessions", call->getNumber());
         return true;
     }
 
-    _logger->info("No duplication of call {}", call->getNumber());
+    _logger->debug("No duplication of call {}", call->getNumber());
     return false;
 }
 
@@ -122,6 +126,8 @@ IncomingStatus CallCenter::ReceiveCall(std::shared_ptr<Call> call) {
         return IncomingStatus::OK;
     }
     else {
+        int queue_waiting_time = _randomizer->getQueueTime(); 
+        call->SetQueueTime(queue_waiting_time);
         _call_queue.push_front(call.get());
         _logger->info("Number {} was placed in call queue. Current position {}/{}", call->getNumber(), _call_queue.size(), _queue_max_size);
         return IncomingStatus::Queued;
@@ -130,7 +136,7 @@ IncomingStatus CallCenter::ReceiveCall(std::shared_ptr<Call> call) {
 }
 
 void CallCenter::Connect(std::shared_ptr<Operator> oper, Call* call) {
-    int call_duration = randomizer->getCallTime();
+    int call_duration = _randomizer->getCallTime();
     _sessions.insert(call->getNumber());
     oper->setCurrentCall(call);
     call->getCDR().operator_response_time = boost::posix_time::microsec_clock::local_time();
@@ -158,5 +164,48 @@ void CallCenter::WriteCDR(const CDREntry& cdr) {
     std::cout << "Hello!\n";
 }
 
+void CallCenter::InitQueueWatchdog() {
+    std::thread watchdog {&CallCenter::RefreshQueue, this, _queue_refresh_time};
+    watchdog.detach();
+    _logger->info("Queue watchdog initialized");
+}
+
+void CallCenter::RefreshQueue(int refresh_time) {
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(refresh_time));
+
+        if (IsQueueEmpty()) {
+            continue;
+        }
+
+        auto time_now {boost::posix_time::microsec_clock::local_time()};
+        if (time_now > _call_queue.back()->GetQueueTime()) {
+            _call_queue.back()->getCDR().status = "Timeout";
+            _call_queue.back()->getCDR().release_time = time_now;
+
+            std::unique_lock lock(watchdog_lock);
+
+            WriteCDR(_call_queue.back()->getCDR());
+            _call_queue.pop_back();
+
+            lock.unlock();
+
+        } 
+        else {
+            if (IsOperatorsAvailable()) {
+                _logger->info("Connecting number {} to operator #{}", _call_queue.back()->getNumber(),
+                                                                      _free_operators.back()->getID());
+                
+                std::unique_lock lock(watchdog_lock);
+
+                Connect(_free_operators.back(), _call_queue.back());
+                _free_operators.pop_back();
+                _call_queue.pop_back();
+
+                lock.unlock();
+            }
+        }
+    }
+}
 
 

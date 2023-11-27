@@ -17,15 +17,18 @@ public:
     CDREntry& getCDR();
     const CDREntry& getCDR() const;
 
+    void SetQueueTime(int ms);
+    const boost::posix_time::ptime& GetQueueTime();
+
     friend bool operator== (const Call& lhs, const Call& rhs) {
         return lhs.getID() == rhs.getID();
     }
 
 private:
-
     CDREntry _call_cdr;
     std::string _phone_number{};
     std::string _id{};
+    boost::posix_time::ptime _queue_time {boost::posix_time::not_a_date_time};
 };
 
 #endif

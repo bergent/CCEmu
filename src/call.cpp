@@ -16,6 +16,14 @@ const std::string& Call::getNumber() const {
     return _phone_number;
 }
 
+void Call::SetQueueTime(int ms) {
+    auto duration {boost::posix_time::time_duration(boost::posix_time::milliseconds(ms))};
+    _queue_time = boost::posix_time::microsec_clock::local_time() + duration;
+}
+
+const boost::posix_time::ptime& Call::GetQueueTime() {
+    return _queue_time;
+}
 
 CDREntry& Call::getCDR() {
     return _call_cdr;

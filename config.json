@@ -15,8 +15,9 @@
    {
         "num_operators": 2,
         "queue_max_size": 2,
-        "min_queue_time": 60,
-        "max_queue_time": 120,
+        "min_queue_time": 15000,
+        "max_queue_time": 30000,
+        "queue_refresh_time": 5000,
         "min_call_time" : 15000,
         "max_call_time" : 30000,
         "same_number_policy": "warning"

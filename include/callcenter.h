@@ -14,6 +14,8 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <thread>
+#include <mutex>
 #include <functional>
 #include <unordered_set>
 #include <vector>
@@ -63,14 +65,15 @@ private:
     std::size_t _queue_max_size{};
 
     // Timings in milliseconds
-    int _min_queue_time;
-    int _max_queue_time;
+    int _min_queue_time{};
+    int _max_queue_time{};
+    int _queue_refresh_time{};
 
-    int _min_call_time;
-    int _max_call_time;
+    int _min_call_time{};
+    int _max_call_time{};
 
     // Duplication policy 
-    Policy _policy;
+    Policy _policy {Policy::Warning};
 
     // Containers
     std::deque<Call*> _call_queue;
@@ -79,7 +82,7 @@ private:
     std::unordered_set<std::string> _sessions;
 
     // Randomizer
-    std::unique_ptr<Randomizer> randomizer;
+    std::unique_ptr<Randomizer> _randomizer;
 
     // Private functions
     void Connect(std::shared_ptr<Operator> oper, Call* call);
@@ -87,12 +90,14 @@ private:
     bool IsQueueFull() const;
     bool IsQueueEmpty() const;
     bool IsDuplication(const Call* const call) const;
+    void RefreshQueue(int refresh_time);
 
     // Initialization functions
     void SettingsInit();
     void LoggerInit();
     void InitOperators();
     void InitRandomizer();
+    void InitQueueWatchdog();
 };
 
 #endif

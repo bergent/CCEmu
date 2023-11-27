@@ -76,7 +76,7 @@ private:
     Policy _policy {Policy::Warning};
 
     // Containers
-    std::deque<Call*> _call_queue;
+    std::deque<std::shared_ptr<Call>> _call_queue;
     std::vector<std::shared_ptr<Operator>> _operators;
     std::deque<std::shared_ptr<Operator>> _free_operators;
     std::unordered_set<std::string> _sessions;
@@ -84,8 +84,14 @@ private:
     // Randomizer
     std::unique_ptr<Randomizer> _randomizer;
 
+    // Output stream for CDR
+    std::ofstream _cdr_file;
+
+    // Facet for date output
+    std::unique_ptr<boost::posix_time::time_facet> _pfacet = std::make_unique<boost::posix_time::time_facet>("%Y-%m-%d %H:%M:%S.%f");
+
     // Private functions
-    void Connect(std::shared_ptr<Operator> oper, Call* call);
+    void Connect(std::shared_ptr<Operator> oper, std::shared_ptr<Call> call);
     bool IsOperatorsAvailable() const;
     bool IsQueueFull() const;
     bool IsQueueEmpty() const;
@@ -97,6 +103,7 @@ private:
     void LoggerInit();
     void InitOperators();
     void InitRandomizer();
+    void InitCDRFile();
     void InitQueueWatchdog();
 };
 

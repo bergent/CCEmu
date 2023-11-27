@@ -4,10 +4,14 @@ using json = nlohmann::json;
 
 std::mutex watchdog_lock;
 
+inline const std::string CDR_header {"IncomingDT;CallID;CgPN;ReleaseDT;Status;ResponseDT;OperatorID;CallDuration"};
+
+
 CallCenter::CallCenter() {
     LoggerInit();
     SettingsInit();
     InitOperators();
+    InitCDRFile();
     InitRandomizer();
     InitQueueWatchdog();
 }
@@ -74,6 +78,16 @@ void CallCenter::InitRandomizer() {
     _logger->info("Randomizer ready");
 }
 
+void CallCenter::InitCDRFile() {
+    _cdr_file.open(cdr_path);
+
+    if (_cdr_file.is_open()) {
+        _cdr_file << CDR_header << '\n';
+    }
+
+    _cdr_file.close();
+}
+
 bool CallCenter::IsOperatorsAvailable() const {
     _logger->debug("Free operators: {}", _free_operators.size());
     return (_free_operators.size() > 0);
@@ -92,7 +106,7 @@ bool CallCenter::IsQueueFull() const {
 bool CallCenter::IsDuplication(const Call* const call) const {
     _logger->debug("Checking if call is a duplication");
 
-    auto queue_result = std::find_if(_call_queue.begin(), _call_queue.end(), [call](Call* queued_call){
+    auto queue_result = std::find_if(_call_queue.begin(), _call_queue.end(), [call](std::shared_ptr<Call> queued_call){
         return call->getNumber() == queued_call->getNumber();
     });
 
@@ -121,21 +135,21 @@ IncomingStatus CallCenter::ReceiveCall(std::shared_ptr<Call> call) {
     }
     else if (IsQueueEmpty() && IsOperatorsAvailable()) {
         _logger->info("Connecting number {} to operator #{}", call->getNumber(), _free_operators.back()->getID());
-        Connect(_free_operators.back(), call.get());
+        Connect(_free_operators.back(), call);
         _free_operators.pop_back();
         return IncomingStatus::OK;
     }
     else {
         int queue_waiting_time = _randomizer->getQueueTime(); 
         call->SetQueueTime(queue_waiting_time);
-        _call_queue.push_front(call.get());
+        _call_queue.push_front(call);
         _logger->info("Number {} was placed in call queue. Current position {}/{}", call->getNumber(), _call_queue.size(), _queue_max_size);
         return IncomingStatus::Queued;
     }
     return IncomingStatus::Undefined;
 }
 
-void CallCenter::Connect(std::shared_ptr<Operator> oper, Call* call) {
+void CallCenter::Connect(std::shared_ptr<Operator> oper, std::shared_ptr<Call> call) {
     int call_duration = _randomizer->getCallTime();
     _sessions.insert(call->getNumber());
     oper->setCurrentCall(call);
@@ -161,7 +175,18 @@ void CallCenter::SetOperatorReady(Operator* oper) {
 }
 
 void CallCenter::WriteCDR(const CDREntry& cdr) {
-    std::cout << "Hello!\n";
+    _cdr_file.open(cdr_path, std::ios_base::app);
+    if (_cdr_file.is_open()) {
+        _cdr_file.imbue(std::locale(_cdr_file.getloc(), _pfacet.get()));
+        _cdr_file << cdr << '\n';
+        _logger->info("Added entry to CDR for number {}", cdr.phone_number);
+    } 
+    else {
+        _logger->error("Unable to write entry to CDR");
+        return;
+    }
+
+    _cdr_file.close();
 }
 
 void CallCenter::InitQueueWatchdog() {

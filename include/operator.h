@@ -15,15 +15,15 @@ public:
 
     int getID() const;
 
-    void setCurrentCall(Call* call);
-    Call* getCurrentCall();
-    const Call* getCurrentCall() const;
+    void setCurrentCall(std::shared_ptr<Call> call);
+    std::shared_ptr<Call> getCurrentCall();
+    const std::shared_ptr<Call> getCurrentCall() const;
 
     void RunCall(int call_duration);
 
 private:
     CallCenter* _parentCC {nullptr};
-    Call* _currentCall {nullptr};
+    std::shared_ptr<Call> _currentCall {nullptr};
 
     void StartConversation(int call_duration);
 

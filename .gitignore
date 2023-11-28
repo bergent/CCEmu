@@ -1,7 +1,10 @@
 # Generated files
 
-bin/
 build/
+
+# Thirdparty libs
+
+thirdparty/
 
 # Log files
 

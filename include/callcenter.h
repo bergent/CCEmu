@@ -8,7 +8,7 @@
 
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/base_sink.h"
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <iostream>

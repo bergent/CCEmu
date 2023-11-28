@@ -25,7 +25,6 @@ void CallCenter::LoggerInit() {
         std::cerr << "CallCenter log init failed: " << ex.what() << '\n';
     }
     spdlog::flush_on(spdlog::level::trace);
-    spdlog::set_default_logger(_logger);
     _logger->info("Logger initialized successfully");
 }
 

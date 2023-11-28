@@ -18,7 +18,6 @@ void Server::LoggerInit() {
         std::cerr << "Server log init failed: " << ex.what() << '\n';
     }
     spdlog::flush_on(spdlog::level::trace);
-    spdlog::set_default_logger(_logger);
     _logger->info("Logger initialized successfully");
 }
 

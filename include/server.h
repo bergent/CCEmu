@@ -7,7 +7,7 @@
 #include "httplib.h"
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/base_sink.h"
 
 #include <string>
 #include <iostream>

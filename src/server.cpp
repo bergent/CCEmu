@@ -3,12 +3,14 @@
 
 using json = nlohmann::json;
 
+// Server Constructor
 Server::Server() {
     LoggerInit();
     SettingsInit();
     _callcenter = std::make_unique<CallCenter>();
 }
 
+// Initiate logger
 void Server::LoggerInit() {
     try {
         _logger = spdlog::basic_logger_mt("server_log", Server::log_path,
@@ -21,6 +23,7 @@ void Server::LoggerInit() {
     _logger->info("Logger initialized successfully");
 }
 
+// Read settings from JSON file
 void Server::SettingsInit() {
     std::fstream jsonfile {Server::config_path};
 
@@ -33,10 +36,15 @@ void Server::SettingsInit() {
 
     json cfg {json::parse(jsonfile)};
 
+    _debug_log = cfg[0]["debug_log"];
+    if (_debug_log)
+        _logger->set_level(spdlog::level::trace);
+
     _port = cfg[0]["server"]["port"];
     _host = cfg[0]["server"]["host"].get<std::string>();
 }
 
+// Main loop to handle requests, send responses and pass down call to callcenter
 void Server::Run() {
     // Check if JSON was read correctly
     if (_port == -1 || _host == "") {

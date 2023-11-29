@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <memory>
 #include <thread>
 #include <mutex>
@@ -61,6 +62,8 @@ private:
     inline static const std::string cdr_path {"../cdr.txt"};
 
     // Config variables 
+    short _debug_log {0};
+
     std::size_t _num_operators{};
     std::size_t _queue_max_size{};
 
@@ -84,8 +87,8 @@ private:
     // Randomizer
     std::unique_ptr<Randomizer> _randomizer;
 
-    // Output stream for CDR
-    std::ofstream _cdr_file;
+    // Output logger for CDR
+    std::shared_ptr<spdlog::logger> _cdr_logger;
 
     // Facet for date output
     std::unique_ptr<boost::posix_time::time_facet> _pfacet = std::make_unique<boost::posix_time::time_facet>("%Y-%m-%d %H:%M:%S.%f");

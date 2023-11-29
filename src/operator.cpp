@@ -2,18 +2,22 @@
 
 std::mutex write_lock;
 
+// Constructor for operator
 Operator::Operator(CallCenter* parentCC) 
     :_id{_id_counter++}, _parentCC{parentCC}
 {}
 
+// ID Getter
 int Operator::getID() const {
     return _id;
 }
 
+// Set call as current for operator
 void Operator::setCurrentCall(std::shared_ptr<Call> call) {
     _currentCall = call;
 }
 
+// Current call getter
 std::shared_ptr<Call> Operator::getCurrentCall() {
     return _currentCall;
 }
@@ -22,6 +26,7 @@ const std::shared_ptr<Call> Operator::getCurrentCall() const {
     return _currentCall;
 }
 
+// Thread starter for call session
 void Operator::RunCall(int call_duration) {
     
     std::thread thr {&Operator::StartConversation, this, call_duration};
@@ -29,6 +34,9 @@ void Operator::RunCall(int call_duration) {
    
 }
 
+// Thread execution function
+// Will make thread sleep for randomized time call_duration
+// and pass the resulting CDREntry to CallCenter handler
 void Operator::StartConversation(int call_duration) {
     std::cout << "Conversation for Operator #" << _id << " with number " << _currentCall->getNumber() << " started.\n";
     std::this_thread::sleep_for(std::chrono::milliseconds(call_duration));

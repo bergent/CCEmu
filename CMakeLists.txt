@@ -60,7 +60,6 @@ FetchContent_Declare(
 
 FetchContent_GetProperties(spdlog)
     if(NOT spdlog_POPULATED)
-      message("Cloning spdlod")
       FetchContent_Populate(spdlog)
       add_subdirectory(
         ${spdlog_SOURCE_DIR}
@@ -68,10 +67,19 @@ FetchContent_GetProperties(spdlog)
     endif()
 FetchContent_MakeAvailable(spdlog)
 
+# === gtest/gmock ===
+FetchContent_Declare(
+	googletest
+	GIT_REPOSITORY https://github.com/google/googletest
+	GIT_TAG 76bb2afb8b522d24496ad1c757a49784fbfa2e42
+)
+FetchContent_MakeAvailable(googletest)
+
 # === Include directories ==	
 include_directories(include/)
 include_directories(thirdparty/**)
 
 # === Adding executable and linking === 
 add_executable(CCEmu ${CCEMU_SRC})
-target_link_libraries(CCEmu PUBLIC ${BOOST_LIBRARIES} nlohmann_json::nlohmann_json spdlog httplib::httplib uuid_v4)
+target_link_libraries(CCEmu PUBLIC ${BOOST_LIBRARIES} nlohmann_json::nlohmann_json spdlog 
+					  httplib::httplib uuid_v4 gtest_main gmock_main)

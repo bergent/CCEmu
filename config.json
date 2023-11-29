@@ -1,4 +1,6 @@
 {
+    "debug_log": 0,
+
     "client": 
     {
         "port": 8080,
@@ -17,7 +19,7 @@
         "queue_max_size": 2,
         "min_queue_time": 20000,
         "max_queue_time": 30000,
-        "queue_refresh_time": 3000,
+        "queue_refresh_time": 1000,
         "min_call_time" : 15000,
         "max_call_time" : 30000,
         "same_number_policy": "warning"

@@ -4,9 +4,12 @@ using json = nlohmann::json;
 
 std::mutex watchdog_lock;
 
+// CDR Header line
+// Used to easily conver resulting cdr.txt file to
+// (for example) .csv file and process it with Excel/Calc
 inline const std::string CDR_header {"IncomingDT;CallID;CgPN;ReleaseDT;Status;ResponseDT;OperatorID;CallDuration"};
 
-
+// CallCenter constructor
 CallCenter::CallCenter() {
     LoggerInit();
     SettingsInit();
@@ -16,6 +19,7 @@ CallCenter::CallCenter() {
     InitQueueWatchdog();
 }
 
+// Initialize logger
 void CallCenter::LoggerInit() {
     try {
         _logger = spdlog::basic_logger_mt("callcenter_log", CallCenter::log_path,
@@ -28,6 +32,7 @@ void CallCenter::LoggerInit() {
     _logger->info("Logger initialized successfully");
 }
 
+// Read settings from JSON
 void CallCenter::SettingsInit() {
     std::ifstream jsonfile(CallCenter::config_path);
 
@@ -37,6 +42,10 @@ void CallCenter::SettingsInit() {
     }
 
     json cfg {json::parse(jsonfile)};
+
+    _debug_log = cfg[0]["debug_log"];
+    if (_debug_log)
+        _logger->set_level(spdlog::level::trace);
 
     _num_operators = cfg[0]["callcenter"]["num_operators"];
     _queue_max_size = cfg[0]["callcenter"]["queue_max_size"];
@@ -61,6 +70,7 @@ void CallCenter::SettingsInit() {
    _max_call_time = cfg[0]["callcenter"]["max_call_time"];
 }
 
+// Create _num_opearors objects of class Operator
 void CallCenter::InitOperators() {
     for (std::size_t idx {0}; idx < _num_operators; ++idx) {
         _operators.push_back(std::make_shared<Operator>(this));
@@ -70,38 +80,50 @@ void CallCenter::InitOperators() {
     _logger->info("Operators ready");
 }
 
-
+// Instantiate randomizer object
 void CallCenter::InitRandomizer() {
     _randomizer = std::make_unique<Randomizer>(_min_queue_time, _max_queue_time,
                                              _min_call_time, _max_call_time);
     _logger->info("Randomizer ready");
 }
 
+// Prepare cdr.txt file for output
 void CallCenter::InitCDRFile() {
-    _cdr_file.open(cdr_path);
-
-    if (_cdr_file.is_open()) {
-        _cdr_file << CDR_header << '\n';
+    try {
+        _cdr_logger = spdlog::basic_logger_mt("cdr_journal", CallCenter::cdr_path,
+                                          true);
+    }
+    catch (const spdlog::spdlog_ex& ex) {
+        std::cerr << "CDR log init failed: " << ex.what() << '\n';
     }
 
-    _cdr_file.close();
+    _cdr_logger->flush_on(spdlog::level::trace);
+    _cdr_logger->set_level(spdlog::level::trace);
+    _cdr_logger->set_pattern("%v");
+    _cdr_logger->trace("{}", CDR_header);
+
+    _logger->info("CDR logger initialized successfully");
 }
 
+// Checks if there are operators in _free_operators deque
 bool CallCenter::IsOperatorsAvailable() const {
     _logger->debug("Free operators: {}", _free_operators.size());
     return (_free_operators.size() > 0);
 }
 
+// Checks if _call_queue is empty
 bool CallCenter::IsQueueEmpty() const {
     _logger->debug("Checking if call queue is empty: {}", _call_queue.empty());
     return _call_queue.empty();
 }
 
+// Checks if _call_queue is full
 bool CallCenter::IsQueueFull() const {
     _logger->debug("Checking if call queue is full: {}", _call_queue.size() >= _queue_max_size);
     return (_call_queue.size() >= _queue_max_size);
 }
 
+// Checks for call duplication in _call_queue and _sessions
 bool CallCenter::IsDuplication(const Call* const call) const {
     _logger->debug("Checking if call is a duplication");
 
@@ -123,6 +145,10 @@ bool CallCenter::IsDuplication(const Call* const call) const {
     return false;
 }
 
+// Incoming call handler. Produces status for incoming call and
+// passes it down to _call_queue or directly to Operator instance 
+// (in case if there are free operators and _call_queue is empty) or
+// rejecting the incoming call in case call queue overload or call duplication
 IncomingStatus CallCenter::ReceiveCall(std::shared_ptr<Call> call) {
     if (IsQueueFull()) {
         _logger->warn("For number {} status is {}", call->getNumber(), "Overload");
@@ -148,6 +174,7 @@ IncomingStatus CallCenter::ReceiveCall(std::shared_ptr<Call> call) {
     return IncomingStatus::Undefined;
 }
 
+// Connect Operator instance to specific call
 void CallCenter::Connect(std::shared_ptr<Operator> oper, std::shared_ptr<Call> call) {
     int call_duration = _randomizer->getCallTime();
     _sessions.insert(call->getNumber());
@@ -159,11 +186,13 @@ void CallCenter::Connect(std::shared_ptr<Operator> oper, std::shared_ptr<Call> c
     oper->RunCall(call_duration);
 }
 
+// Remove call number from _sessions set
 void CallCenter::EndActiveSession(const std::string& number) {
     if (auto iter = _sessions.find(number); iter != _sessions.end())
         _sessions.erase(iter);
 }
 
+// Put Operator instance to _free_operators deque's front
 void CallCenter::SetOperatorReady(Operator* oper) {
     auto iter = std::find_if(_operators.begin(), _operators.end(),
     [oper](std::shared_ptr<Operator> base_oper){
@@ -173,27 +202,27 @@ void CallCenter::SetOperatorReady(Operator* oper) {
     _free_operators.push_front(*iter);
 }
 
+// Writing CDR Journal entry to output file
 void CallCenter::WriteCDR(const CDREntry& cdr) {
-    _cdr_file.open(cdr_path, std::ios_base::app);
-    if (_cdr_file.is_open()) {
-        _cdr_file.imbue(std::locale(_cdr_file.getloc(), _pfacet.get()));
-        _cdr_file << cdr << '\n';
-        _logger->info("Added entry to CDR for number {}", cdr.phone_number);
-    } 
-    else {
-        _logger->error("Unable to write entry to CDR");
-        return;
-    }
-
-    _cdr_file.close();
+    std::stringstream ss;
+    ss << cdr;
+    std::string cdr_line {ss.str()};
+    _cdr_logger->trace("{}", cdr_line);
 }
 
+// Initialize watchdog thread designed to manage the call queue
 void CallCenter::InitQueueWatchdog() {
     std::thread watchdog {&CallCenter::RefreshQueue, this, _queue_refresh_time};
     watchdog.detach();
     _logger->info("Queue watchdog initialized");
 }
 
+// Watchdog thread's execution function.
+// Checks call queue evere refresh_time miliseconds
+// If there are free operators it will connect the first call
+// in deque to it. 
+// If current time is greater than queue waiting time of first call in deque
+// will reject this call with Timeout status
 void CallCenter::RefreshQueue(int refresh_time) {
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(refresh_time));

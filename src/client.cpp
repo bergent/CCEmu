@@ -2,11 +2,13 @@
 
 using json = nlohmann::json;
 
+// Client constructor
 Client::Client() {
     LoggerInit();
     SettingsInit();
 }
 
+// Initialize logger
 void Client::LoggerInit() {
     try {
         _logger = spdlog::basic_logger_mt("client_log", Client::log_path,
@@ -19,6 +21,7 @@ void Client::LoggerInit() {
     _logger->info("Logger initialized successfully");
 }
 
+// Read setting from JSON file
 void Client::SettingsInit() {
     std::ifstream jsonfile(Client::config_path);
 
@@ -31,10 +34,15 @@ void Client::SettingsInit() {
 
     json cfg {json::parse(jsonfile)};
 
+    _debug_log = cfg[0]["debug_log"];
+    if (_debug_log)
+        _logger->set_level(spdlog::level::trace);
+
     _port = cfg[0]["client"]["port"];
     _host = cfg[0]["client"]["host"].get<std::string>();
 }
 
+// Main loop which provides senting requests and receiving responses
 void Client::Run() {
     // Check if JSON file was read correctly
     if (_port == -1 || _host == "") {

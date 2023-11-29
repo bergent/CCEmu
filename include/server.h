@@ -27,6 +27,8 @@ private:
     inline static const std::string log_path {"../logs/server.log"};   
     std::shared_ptr<spdlog::logger> _logger;
 
+    short _debug_log {0};
+
     int _port{};
     std::string _host{};
 

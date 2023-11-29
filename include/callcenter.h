@@ -93,6 +93,9 @@ private:
     // Facet for date output
     std::unique_ptr<boost::posix_time::time_facet> _pfacet = std::make_unique<boost::posix_time::time_facet>("%Y-%m-%d %H:%M:%S.%f");
 
+    // String stream to output date
+    std::stringstream _cdr_ss;
+
     // Private functions
     void Connect(std::shared_ptr<Operator> oper, std::shared_ptr<Call> call);
     bool IsOperatorsAvailable() const;

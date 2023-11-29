@@ -37,6 +37,8 @@ void Client::SettingsInit() {
     _debug_log = cfg[0]["debug_log"];
     if (_debug_log)
         _logger->set_level(spdlog::level::trace);
+    else
+        _logger->set_level(spdlog::level::info);
 
     _port = cfg[0]["client"]["port"];
     _host = cfg[0]["client"]["host"].get<std::string>();

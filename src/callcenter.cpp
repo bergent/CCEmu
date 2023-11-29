@@ -46,6 +46,8 @@ void CallCenter::SettingsInit() {
     _debug_log = cfg[0]["debug_log"];
     if (_debug_log)
         _logger->set_level(spdlog::level::trace);
+    else
+        _logger->set_level(spdlog::level::info);
 
     _num_operators = cfg[0]["callcenter"]["num_operators"];
     _queue_max_size = cfg[0]["callcenter"]["queue_max_size"];
@@ -75,7 +77,7 @@ void CallCenter::InitOperators() {
     for (std::size_t idx {0}; idx < _num_operators; ++idx) {
         _operators.push_back(std::make_shared<Operator>(this));
         _free_operators.push_front(std::shared_ptr<Operator>(_operators.back()));
-        _logger->info("Added operator {}", _operators.back()->getID());
+        _logger->debug("Added operator {}", _operators.back()->getID());
     }
     _logger->info("Operators ready");
 }
@@ -101,7 +103,7 @@ void CallCenter::InitCDRFile() {
     _cdr_logger->set_level(spdlog::level::trace);
     _cdr_logger->set_pattern("%v");
     _cdr_logger->trace("{}", CDR_header);
-
+    _cdr_ss.imbue(std::locale(_cdr_ss.getloc(), _pfacet.get()));
     _logger->info("CDR logger initialized successfully");
 }
 
@@ -204,10 +206,11 @@ void CallCenter::SetOperatorReady(Operator* oper) {
 
 // Writing CDR Journal entry to output file
 void CallCenter::WriteCDR(const CDREntry& cdr) {
-    std::stringstream ss;
-    ss << cdr;
-    std::string cdr_line {ss.str()};
+    _cdr_ss << cdr;
+    std::string cdr_line {_cdr_ss.str()};
     _cdr_logger->trace("{}", cdr_line);
+    _logger->info("Wrote CDR entry for number {}", cdr.phone_number);
+    _cdr_ss.str(std::string());
 }
 
 // Initialize watchdog thread designed to manage the call queue

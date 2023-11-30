@@ -10,7 +10,8 @@ project(CCEmu
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
-file(GLOB_RECURSE CCEMU_SRC CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+file(GLOB CCEMU_SRC CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+file(GLOB CCEMU_TEST_SRC CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
 
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREAD ON)
@@ -83,3 +84,16 @@ include_directories(thirdparty/**)
 add_executable(CCEmu ${CCEMU_SRC})
 target_link_libraries(CCEmu PUBLIC ${BOOST_LIBRARIES} nlohmann_json::nlohmann_json spdlog 
 					  httplib::httplib uuid_v4 gtest_main gmock_main)
+
+# === Enable GTest testing ===
+
+enable_testing()
+
+add_executable(CCEmuTest ${CCEMU_TEST_SRC}
+				${CMAKE_CURRENT_SOURCE_DIR}/src/call.cpp)
+
+target_link_libraries(CCEmuTest gtest_main gmock_main)
+
+include(GoogleTest)
+gtest_discover_tests(CCEmuTest)
+

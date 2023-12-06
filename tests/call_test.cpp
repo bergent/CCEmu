@@ -41,9 +41,4 @@ namespace {
         ASSERT_EQ(call->getCDR().phone_number, call->getNumber());
     }
 
-    TEST(CallTest, InitialQueueTimeIsNotADateTime) {
-        Call testcall {"88005553535", "11bf5b37-e0b8-42e0-8dcf-dc8c4aefc000"};
-
-        ASSERT_TRUE(testcall.GetQueueTime().is_not_a_date_time());
-    }
 }

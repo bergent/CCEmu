@@ -16,7 +16,7 @@ namespace {
         int min_queue = 0;
         int max_queue = 100;
         int min_call = 0;
-        int max_call = 0;
+        int max_call = 100;
     };
 
     TEST_F(RandomizerTest, GetQueueTimeGreatOrEqualMinQueueTime) {
